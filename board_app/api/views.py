@@ -1,10 +1,11 @@
 from board_app.models import Board
-from .serializers import BoardSerializer
-from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+from .serializers import BoardSerializer, SingleBoardSerializer, BoardUpdateSerializer
+from .permissions import BoardAccessPermission
 
 
-class BoardView(generics.ListCreateAPIView):
+class BoardListView(generics.ListCreateAPIView):
     serializer_class = BoardSerializer
     permission_classes = [IsAuthenticated]
 
@@ -15,5 +16,18 @@ class BoardView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
+
+
+class BoardDetailView(generics.RetrieveUpdateDestroyAPIView): 
+    queryset = Board.objects.all()
+    permission_classes = [IsAuthenticated, BoardAccessPermission]
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return SingleBoardSerializer 
+        elif self.request.method == 'PATCH':
+            return BoardUpdateSerializer
+        return SingleBoardSerializer
+    
 
 

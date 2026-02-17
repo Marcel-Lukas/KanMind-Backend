@@ -54,3 +54,33 @@ class BoardSerializer(serializers.ModelSerializer):
         if members is not None:
             instance.members.set(members)
         return instance
+
+
+
+class SingleBoardSerializer(serializers.ModelSerializer):
+    owner_id = serializers.IntegerField(source='owner.id', read_only=True)
+    
+    class Meta:
+         model = Board
+         fields = ['id', 'title', 'owner_id', 'members', 'tasks']
+
+
+
+class BoardUpdateSerializer(serializers.ModelSerializer):
+      members = serializers.PrimaryKeyRelatedField(
+          queryset=User.objects.all(), 
+          many=True, 
+          required=False, 
+      )
+
+      class Meta:
+          model = Board
+          fields = ['id', 'title', 'owner_data', 'members_data', 'members']
+          extra_kwargs = {'members': {'write_only': True}} 
+
+      def to_representation(self, instance):
+           data = super().to_representation(instance)
+           data.pop('members', None)
+           return data
+      
+
