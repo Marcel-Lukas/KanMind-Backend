@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from board_app.models import Board
 from django.contrib.auth.models import User
+from tasks_app.api.serializers import TaskBasicSerializer, UserBriefSerializer
 
 
 class BoardSerializer(serializers.ModelSerializer):
@@ -10,7 +11,7 @@ class BoardSerializer(serializers.ModelSerializer):
         required=False,
         write_only=True
     )
-    owner_id = serializers.IntegerField(source="owner_id", read_only=True)
+    owner_id = serializers.IntegerField(source="owner.id", read_only=True)
 
     member_count = serializers.SerializerMethodField()
     ticket_count = serializers.SerializerMethodField()
@@ -59,6 +60,8 @@ class BoardSerializer(serializers.ModelSerializer):
 
 class SingleBoardSerializer(serializers.ModelSerializer):
     owner_id = serializers.IntegerField(source='owner.id', read_only=True)
+    members = UserBriefSerializer(many=True, read_only=True)
+    tasks = TaskBasicSerializer(many=True, read_only=True) 
     
     class Meta:
          model = Board
@@ -67,12 +70,14 @@ class SingleBoardSerializer(serializers.ModelSerializer):
 
 
 class BoardUpdateSerializer(serializers.ModelSerializer):
+      owner_data = UserBriefSerializer(source='owner', read_only=True) 
+      members_data = UserBriefSerializer(source='members', many=True, read_only=True) 
       members = serializers.PrimaryKeyRelatedField(
           queryset=User.objects.all(), 
           many=True, 
           required=False, 
       )
-
+      
       class Meta:
           model = Board
           fields = ['id', 'title', 'owner_data', 'members_data', 'members']
@@ -82,5 +87,6 @@ class BoardUpdateSerializer(serializers.ModelSerializer):
            data = super().to_representation(instance)
            data.pop('members', None)
            return data
+      
       
 
