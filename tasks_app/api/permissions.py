@@ -56,3 +56,9 @@ class IsBoardOwner(permissions.BasePermission):
         return board.owner_id == user.id
 
 
+
+class IsCommentAuthor(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return obj.author == request.user
+    
+

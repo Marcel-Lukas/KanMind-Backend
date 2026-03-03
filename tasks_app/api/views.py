@@ -1,7 +1,7 @@
 from tasks_app.models import Task, TaskComment
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
-from .permissions import IsMemberOfBoard, IsBoardOwner
+from .permissions import IsMemberOfBoard, IsBoardOwner, IsCommentAuthor
 from .serializers import TaskSerializer, TaskCommentSerializer
 from django.db import models
 from rest_framework.exceptions import NotFound
@@ -93,3 +93,17 @@ class TaskCommentsView(generics.ListCreateAPIView):
         )
 
 
+
+class TaskCommentDetailView(generics.RetrieveDestroyAPIView):
+    queryset = TaskComment.objects.all()
+    serializer_class = TaskCommentSerializer
+    permission_classes = [IsAuthenticated, IsCommentAuthor]
+
+    def get_queryset(self):
+        task_id = self.kwargs.get('task_id')
+        comment_id = self.kwargs.get('pk')
+        return TaskComment.objects.filter(
+            task_id=task_id,
+            pk=comment_id
+        )
+    

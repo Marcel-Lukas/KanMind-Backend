@@ -4,5 +4,6 @@ from .views import BoardListView, BoardDetailView, EmailCheckView
 urlpatterns = [
     path('boards/', BoardListView.as_view(), name='boards'),
     path('boards/<int:pk>/', BoardDetailView.as_view(), name='board-detail'),
-    path('email-check/', EmailCheckView.as_view(), name='email-check')
+    path('email-check/', EmailCheckView.as_view(), name='email-check'),
+
 ]
