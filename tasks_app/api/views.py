@@ -1,9 +1,10 @@
 from tasks_app.models import Task
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
-from .permissions import IsMemberOfBoard
+from .permissions import IsMemberOfBoard, IsBoardOwner
 from .serializers import TaskSerializer
 from django.db import models
+from rest_framework.exceptions import NotFound
 
 
 class TaskListCreateView(generics.ListCreateAPIView):
@@ -48,3 +49,29 @@ class CurrentUserTasksView(generics.ListCreateAPIView):
             serializer.save()
 
 
+
+class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
+
+    def get_permissions(self):
+        if self.request.method == 'DELETE':
+            return [IsBoardOwner()]
+        return [IsAuthenticated(), IsMemberOfBoard()]
+
+    def get_queryset(self):
+        user = self.request.user
+        q_object = models.Q(board__members=user) | models.Q(board__owner=user)
+        queryset = Task.objects.filter(q_object).distinct()
+        return queryset
+    
+    def get_object(self):
+        task_id = self.kwargs.get('pk')
+        try:
+            obj = Task.objects.get(pk=task_id)
+        except Task.DoesNotExist:
+            raise NotFound("Task not found.")
+
+        self.check_object_permissions(self.request, obj)
+        return obj
+    
