@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from tasks_app.models import Task
+from tasks_app.models import Task, TaskComment
 from django.contrib.auth.models import User
 
 class UserBriefSerializer(serializers.ModelSerializer):
@@ -62,4 +62,16 @@ class TaskBasicSerializer(TaskSerializer):
         fields = [field for field in TaskSerializer.Meta.fields if field != 'board']
 
 
+
+class TaskCommentSerializer(serializers.ModelSerializer):
+    author = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = TaskComment
+        fields = ['id', 'created_at', 'author', 'content']
+        read_only_fields = ['id', 'created_at', 'author']
+
+    def get_author(self, obj):
+        return f"{obj.author.first_name} {obj.author.last_name}".strip() or obj.author.username
+    
 
