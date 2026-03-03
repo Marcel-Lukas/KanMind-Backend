@@ -4,7 +4,6 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 
 
-
 class RegistrationSerializer(serializers.ModelSerializer):
     fullname = serializers.CharField(write_only=True)
     repeated_password = serializers.CharField(write_only=True)
@@ -73,11 +72,12 @@ class CustomAuthTokenSerializer(serializers.Serializer):
         try:
             user_obj = User.objects.get(email__iexact=email)
         except User.DoesNotExist:
-            raise serializers.ValidationError({'detail': 'Ungültige Anmeldedaten!'})
+            raise serializers.ValidationError({'detail': 'Invalid login details!'})
 
         user = authenticate(username=user_obj.username, password=password)
         if not user:
-            raise serializers.ValidationError({'detail': 'Ungültige Anmeldedaten!'})
+            raise serializers.ValidationError({'detail': 'Invalid login details!'})
 
         attrs['user'] = user
         return attrs
+    
