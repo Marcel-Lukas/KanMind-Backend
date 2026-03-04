@@ -1,3 +1,5 @@
+"""URL patterns for task and comment endpoints."""
+
 from django.urls import path
 from .views import TaskListCreateView, CurrentUserTasksView, TaskDetailView, TaskCommentsView, TaskCommentDetailView
 

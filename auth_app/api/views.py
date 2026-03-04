@@ -1,3 +1,5 @@
+"""Auth API views for registration, login, and logout."""
+
 from django.contrib.auth.models import User
 from rest_framework import generics, status
 from rest_framework.authtoken.models import Token
@@ -8,6 +10,7 @@ from .serializers import RegistrationSerializer, CustomAuthTokenSerializer
 
 
 def get_token_response(user: User) -> dict:
+    """Build the standardized auth response payload."""
     token, _created = Token.objects.get_or_create(user=user)
     return {
         "token": token.key,
@@ -18,11 +21,14 @@ def get_token_response(user: User) -> dict:
 
 
 class RegistrationView(generics.CreateAPIView):
+    """Register a new user and immediately return auth token data."""
+
     serializer_class = RegistrationSerializer
     permission_classes = [AllowAny]
     queryset = User.objects.all()
 
     def post(self, request):
+        """Validate payload, persist user, and return token response."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -32,10 +38,13 @@ class RegistrationView(generics.CreateAPIView):
 
 
 class CustomLoginView(APIView):
+    """Authenticate user credentials and return token payload."""
+
     permission_classes = [AllowAny]
     serializer_class = CustomAuthTokenSerializer
 
     def post(self, request):
+        """Run serializer-based authentication flow."""
         serializer = self.serializer_class(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
 
@@ -46,9 +55,12 @@ class CustomLoginView(APIView):
 
 
 class LogoutView(APIView):
+    """Invalidate current user's token."""
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        """Delete the existing token if present."""
         token = getattr(request.user, "auth_token", None)
         if token:
             token.delete()

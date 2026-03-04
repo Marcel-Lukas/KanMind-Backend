@@ -1,8 +1,12 @@
+"""Task domain models for boards and task comments."""
+
 from django.db import models
 from django.contrib.auth.models import User
 from board_app.models import Board
 
 class Task(models.Model):
+    """A work item that belongs to a board."""
+
     PRIORITY_CHOICES = [
         ('low', 'Low'),
         ('medium', 'Medium'),
@@ -26,17 +30,21 @@ class Task(models.Model):
     comments_count = models.IntegerField(default=0, null=True, blank=True)
 
     def __str__(self):
+        """Return task title for admin and debugging output."""
         return self.title
 
 
 
 class TaskComment(models.Model):
+    """A user comment attached to a task."""
+
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='comments', blank=True, null=True)
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='task_author', blank=True, null=True)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     def __str__(self):
+        """Return concise preview with author and excerpt."""
         return f"{self.author.username}: {self.content[:25]}"
     
 
