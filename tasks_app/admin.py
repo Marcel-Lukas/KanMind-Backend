@@ -25,7 +25,7 @@ class TaskAdmin(admin.ModelAdmin):
 		'reviewer__email',
 	)
 	list_filter = ('status', 'priority', 'due_date', 'board')
-	ordering = ('due_date', '-id')
+	ordering = ('-id',)
 	list_select_related = ('board', 'assignee', 'reviewer')
 	autocomplete_fields = ('board', 'assignee', 'reviewer')
 	date_hierarchy = 'due_date'
@@ -36,7 +36,7 @@ class TaskCommentAdmin(admin.ModelAdmin):
 	list_display = ('id', 'task', 'author', 'created_at', 'short_content')
 	search_fields = ('content', 'author__username', 'author__email', 'task__title')
 	list_filter = ('created_at',)
-	ordering = ('-created_at',)
+	ordering = ('-id',)
 	list_select_related = ('task', 'author')
 	autocomplete_fields = ('task', 'author')
 
