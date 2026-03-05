@@ -12,7 +12,9 @@ class IsMemberOfBoard(permissions.BasePermission):
     def has_permission(self, request, view):
         """Validate board access for non-object requests."""
         board = self._get_board(request, view, from_object=False)
-        return board is not None and self._is_member_or_owner(request.user, board)
+        if board is None:
+            return self._allow_without_board_context(request)
+        return self._is_member_or_owner(request.user, board)
 
     def has_object_permission(self, request, view, obj):
         """Validate board access for object-level requests."""
@@ -25,7 +27,7 @@ class IsMemberOfBoard(permissions.BasePermission):
             return self._extract_board_from_object(obj)
 
         board_id = self._get_board_id_from_data(request)
-        if board_id:
+        if board_id is not None:
             return get_object_or_404(Board, pk=board_id)
 
         task_id = view.kwargs.get("pk") or view.kwargs.get("task_id")
@@ -38,7 +40,18 @@ class IsMemberOfBoard(permissions.BasePermission):
     def _get_board_id_from_data(self, request):
         """Support common board field names in incoming payloads."""
         data = getattr(request, "data", {}) or {}
-        return data.get("board") or data.get("board_id") or data.get("boardId")
+        for key in ("board", "board_id", "boardId"):
+            if key in data:
+                return data.get(key)
+        return None
+
+    def _allow_without_board_context(self, request):
+        """Handle list/create calls where board context is resolved later."""
+        if request.method in permissions.SAFE_METHODS:
+            return bool(request.user and request.user.is_authenticated)
+        if request.method == "POST":
+            return True
+        return False
 
     def _extract_board_from_object(self, obj):
         """Extract board relation from task or comment objects."""

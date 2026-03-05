@@ -9,5 +9,5 @@ urlpatterns = [
     path('tasks/<int:pk>/comments/', TaskCommentsView.as_view(), name='tasks-comments'),
     path('tasks/<int:task_id>/comments/<int:pk>/', TaskCommentDetailView.as_view(), name='task-comment-detail'),
     path('tasks/assigned-to-me/', CurrentUserTasksView.as_view(), name='tasks-assigned'),
-    path('tasks/reviewing/', CurrentUserTasksView().as_view(), name='tasks-reviewing'),
+    path('tasks/reviewing/', CurrentUserTasksView.as_view(), name='tasks-reviewing'),
 ]
