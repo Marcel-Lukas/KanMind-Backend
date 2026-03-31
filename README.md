@@ -1,7 +1,9 @@
-# [KanMind Backend](https://github.com/Developer-Akademie-Backendkurs/project.KanMind)
+# KanMind Backend
 
 A Django REST Framework backend for a Kanban-based project management system.
-It supports authentication, board collaboration, task management, and task comments.
+It supports authentication, board collaboration, task management, and task comments.<br>
+The corresponding frontend repository can be found here: 
+[KanMind Frontend](https://github.com/Developer-Akademie-Backendkurs/project.KanMind)
 
 ---
 
@@ -17,6 +19,7 @@ It supports authentication, board collaboration, task management, and task comme
 - [API Endpoints](#-api-endpoints)
 - [CORS Configuration](#-cors-configuration)
 - [Troubleshooting](#-troubleshooting)
+- [Helpful Documentation](#-helpful-documentation)
 
 ---
 
