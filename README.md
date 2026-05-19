@@ -18,6 +18,7 @@ The corresponding frontend repository can be found here:
 - [Authentication](#-authentication)
 - [API Endpoints](#-api-endpoints)
 - [CORS Configuration](#-cors-configuration)
+- [Running Tests](#-running-tests)
 - [Troubleshooting](#-troubleshooting)
 - [Helpful Documentation](#-helpful-documentation)
 
@@ -244,6 +245,37 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:5500',
 ]
 ```
+
+---
+
+## 🧪 Running Tests
+
+Run all tests:
+
+```bash
+python manage.py test
+```
+
+Tests are organized per application under `<app>/tests/`:
+
+```text
+auth_app/tests/    — Registration, login, logout
+board_app/tests/   — Board list, board detail, board counters, email check, models
+tasks_app/tests/   — Task list/create, task detail, task comments, task comment detail, current user tasks, models
+```
+
+Test a specific application:
+
+```bash
+python manage.py test tasks_app -v 2
+```
+
+| Verbosity | Output |
+|---|---|
+| `-v 0` | Very little output |
+| `-v 1` | Standard (default) |
+| `-v 2` | Detailed |
+| `-v 3` | Very detailed (near debug) |
 
 ---
 
