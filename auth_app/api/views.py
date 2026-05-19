@@ -6,17 +6,18 @@ from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import RegistrationSerializer, CustomAuthTokenSerializer
+
+from .serializers import CustomAuthTokenSerializer, RegistrationSerializer
 
 
-def get_token_response(user: User) -> dict:
-    """Build the standardized auth response payload."""
-    token, _created = Token.objects.get_or_create(user=user)
+def build_token_response(user):
+    """Build the standardised auth response payload for a given user."""
+    token, _ = Token.objects.get_or_create(user=user)
     return {
-        "token": token.key,
-        "fullname": user.username,
-        "email": user.email,
-        "user_id": user.id,
+        'token': token.key,
+        'fullname': user.username,
+        'email': user.email,
+        'user_id': user.id,
     }
 
 
@@ -27,14 +28,12 @@ class RegistrationView(generics.CreateAPIView):
     permission_classes = [AllowAny]
     queryset = User.objects.all()
 
-    def post(self, request):
+    def create(self, request, *args, **kwargs):
         """Validate payload, persist user, and return token response."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         user = serializer.save()
-        return Response(get_token_response(user), status=status.HTTP_201_CREATED)
-
+        return Response(build_token_response(user), status=status.HTTP_201_CREATED)
 
 
 class CustomLoginView(APIView):
@@ -45,29 +44,26 @@ class CustomLoginView(APIView):
 
     def post(self, request):
         """Run serializer-based authentication flow."""
-        serializer = self.serializer_class(data=request.data, context={"request": request})
+        serializer = self.serializer_class(
+            data=request.data,
+            context={'request': request},
+        )
         serializer.is_valid(raise_exception=True)
-
-        user = serializer.validated_data["user"]
-        data = get_token_response(user)
-        return Response(data, status=status.HTTP_200_OK)
-
+        user = serializer.validated_data['user']
+        return Response(build_token_response(user), status=status.HTTP_200_OK)
 
 
 class LogoutView(APIView):
-    """Invalidate current user's token."""
+    """Invalidate the current user's token."""
 
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         """Delete the existing token if present."""
-        token = getattr(request.user, "auth_token", None)
-        if token:
+        token = getattr(request.user, 'auth_token', None)
+        if token is not None:
             token.delete()
-
         return Response(
-            {"detail": "Logout successful. Token has been deleted."},
+            {'detail': 'Logout successful. Token has been deleted.'},
             status=status.HTTP_200_OK,
         )
-    
-

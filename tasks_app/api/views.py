@@ -1,68 +1,74 @@
 """Task and task-comment API views."""
 
-from tasks_app.models import Task, TaskComment
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
-from .permissions import IsMemberOfBoard, IsBoardOwner, IsCommentAuthor
-from .serializers import TaskSerializer, TaskCommentSerializer
-from django.db import models
-from rest_framework.exceptions import NotFound
+
+from tasks_app.models import Task, TaskComment
+
+from .permissions import IsBoardOwner, IsCommentAuthor, IsMemberOfBoard
+from .serializers import TaskCommentSerializer, TaskSerializer
+
+
+def tasks_visible_to(user):
+    """Return tasks belonging to boards the user owns or joined."""
+    return Task.objects.filter(
+        Q(board__members=user) | Q(board__owner=user)
+    ).distinct()
 
 
 class TaskListCreateView(generics.ListCreateAPIView):
     """List all tasks visible to the user or create a new task."""
 
-    queryset = Task.objects.all()
     serializer_class = TaskSerializer
-    permission_classes = [IsAuthenticated, IsMemberOfBoard] 
+    permission_classes = [IsAuthenticated, IsMemberOfBoard]
 
     def get_queryset(self):
         """Restrict task list to boards the user can access."""
-        user = self.request.user
-        return Task.objects.filter(
-            models.Q(board__members=user) | models.Q(board__owner=user)
-        ).distinct()
+        return tasks_visible_to(self.request.user)
 
 
+class _CurrentUserTaskListView(generics.ListCreateAPIView):
+    """Base view for personalised task collections of the current user."""
 
-class CurrentUserTasksView(generics.ListCreateAPIView):
-    """Handle personalized task collections (assigned/reviewing)."""
-
-    queryset = Task.objects.all()
     serializer_class = TaskSerializer
-    permission_classes = [IsAuthenticated] 
+    permission_classes = [IsAuthenticated]
+
+    #: Name of the ``Task`` field used to filter/assign by the current user.
+    user_field = ''
 
     def get_queryset(self):
-        """Select tasks by endpoint context for current user."""
-        user = self.request.user
-        if 'assigned-to-me' in self.request.path:
-            return Task.objects.filter(
-                models.Q(board__members=user) | models.Q(board__owner=user), 
-                assignee=user,
-            ).distinct()
-        elif 'reviewing' in self.request.path:
-            return Task.objects.filter(
-                models.Q(board__members=user) | models.Q(board__owner=user),
-                reviewer=user,
-            ).distinct()
-        else:
+        """Filter visible tasks by the configured role field."""
+        if not self.user_field:
             return Task.objects.none()
-        
-    def perform_create(self, serializer):
-        """Apply endpoint-specific default assignee/reviewer values."""
-        if 'assigned-to-me' in self.request.path:
-            serializer.save(assignee=self.request.user)
-        elif 'reviewing' in self.request.path:
-            serializer.save(reviewer=self.request.user)
-        else:
-            serializer.save()
+        return tasks_visible_to(self.request.user).filter(
+            **{self.user_field: self.request.user}
+        )
 
+    def perform_create(self, serializer):
+        """Save task with the current user pre-filled for the role field."""
+        if not self.user_field:
+            serializer.save()
+            return
+        serializer.save(**{self.user_field: self.request.user})
+
+
+class AssignedToMeTasksView(_CurrentUserTaskListView):
+    """List or create tasks where the current user is the assignee."""
+
+    user_field = 'assignee'
+
+
+class ReviewingTasksView(_CurrentUserTaskListView):
+    """List or create tasks where the current user is the reviewer."""
+
+    user_field = 'reviewer'
 
 
 class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Retrieve, update, or delete a single task."""
 
-    queryset = Task.objects.all()
     serializer_class = TaskSerializer
 
     def get_permissions(self):
@@ -72,59 +78,35 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
         return [IsAuthenticated(), IsMemberOfBoard()]
 
     def get_queryset(self):
-        """Expose only tasks from boards user owns or joined."""
-        user = self.request.user
-        q_object = models.Q(board__members=user) | models.Q(board__owner=user)
-        queryset = Task.objects.filter(q_object).distinct()
-        return queryset
-    
-    def get_object(self):
-        """Fetch task by primary key and enforce object permissions."""
-        task_id = self.kwargs.get('pk')
-        try:
-            obj = Task.objects.get(pk=task_id)
-        except Task.DoesNotExist:
-            raise NotFound("Task not found.")
-
-        self.check_object_permissions(self.request, obj)
-        return obj
-    
+        """Expose only tasks from boards the user owns or joined."""
+        return tasks_visible_to(self.request.user)
 
 
 class TaskCommentsView(generics.ListCreateAPIView):
     """List and create comments for a specific task."""
 
     serializer_class = TaskCommentSerializer
-    permission_classes = [IsAuthenticated, IsMemberOfBoard] 
+    permission_classes = [IsAuthenticated, IsMemberOfBoard]
 
     def get_queryset(self):
         """Return comments bound to the URL task ID."""
-        task_id = self.kwargs.get('pk')
-        return TaskComment.objects.filter(task_id=task_id)
+        return TaskComment.objects.filter(task_id=self.kwargs.get('pk'))
 
     def perform_create(self, serializer):
-        """Persist new comment with current user as author."""
-        task_id = self.kwargs.get('pk')
-        serializer.save(
-            author=self.request.user,
-            task=Task.objects.get(pk=task_id)
-        )
-
+        """Persist new comment with the current user as author."""
+        task = get_object_or_404(Task, pk=self.kwargs.get('pk'))
+        serializer.save(author=self.request.user, task=task)
 
 
 class TaskCommentDetailView(generics.RetrieveDestroyAPIView):
     """Retrieve or delete a specific comment of a task."""
 
-    queryset = TaskComment.objects.all()
     serializer_class = TaskCommentSerializer
     permission_classes = [IsAuthenticated, IsCommentAuthor]
 
     def get_queryset(self):
         """Scope comments to the task/comment IDs from the URL."""
-        task_id = self.kwargs.get('task_id')
-        comment_id = self.kwargs.get('pk')
         return TaskComment.objects.filter(
-            task_id=task_id,
-            pk=comment_id
+            task_id=self.kwargs.get('task_id'),
+            pk=self.kwargs.get('pk'),
         )
-    
