@@ -14,6 +14,7 @@ The corresponding frontend repository can be found here:
 - [Requirements](#-requirements)
 - [Installation & Setup](#-installation--setup)
 - [Database & Migrations](#-database--migrations)
+- [Seed Database](#-seed-database)
 - [Project Structure](#-project-structure)
 - [Authentication](#-authentication)
 - [API Endpoints](#-api-endpoints)
@@ -117,6 +118,58 @@ rm db.sqlite3
 python manage.py migrate
 python manage.py createsuperuser
 ```
+
+---
+
+## 🌱 Seed Database
+
+Populate the database with realistic demo data using the built-in management command:
+
+```bash
+python manage.py seed_database
+```
+
+This creates:
+- **12 demo users** (e.g. `Alice Schneider`, `Bob Müller`, `Carol Becker` …)
+- **5 boards** with randomized members
+- **~28 tasks** distributed across all boards, each with status, priority, assignee, reviewer, and due date
+- **Task comments** on selected tasks
+
+### Options
+
+| Flag | Default | Description |
+|---|---|---|
+| `--flush` | — | Delete all existing demo data before seeding |
+| `--users N` | `10` | Number of demo users to create (max 12) |
+| `--boards N` | `5` | Number of boards to create (max 8) |
+| `--seed N` | `42` | Random seed for reproducible results |
+
+### Examples
+
+```bash
+# Fresh seed (wipe + refill)
+python manage.py seed_database --flush
+
+# Custom amount of users and boards
+python manage.py seed_database --flush --users 12 --boards 8
+
+# Reproducible data with a specific seed
+python manage.py seed_database --flush --seed 99
+```
+
+### Demo Login
+
+A dedicated guest account is always created for quick demos:
+
+| Field | Value |
+|---|---|
+| E-Mail | `gast@demo.de` |
+| Password | `password123` |
+| Username | `Gast Account` |
+
+The guest account is added as a member of every seeded board, so all demo content is visible immediately after login.
+
+> **Note:** The demo password `password123` is intentionally simple and must never be used in production.
 
 ---
 
